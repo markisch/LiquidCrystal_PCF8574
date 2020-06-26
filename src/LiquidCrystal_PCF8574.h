@@ -9,7 +9,7 @@
 /// See http://www.mathertel.de/License.aspx
 ///
 /// \details
-/// This library can drive a Liquid Cristal display based on the Hitachi HD44780 chip that is connected 
+/// This library can drive a Liquid Cristal display based on the Hitachi HD44780 chip that is connected
 /// through a PCF8574 I2C adapter. It uses the original Wire library for communication.
 /// The API if common to many LCD libraries and documented in https://www.arduino.cc/en/Reference/LiquidCrystal.
 /// and partially functions from https://playground.arduino.cc/Code/LCDAPI/.
@@ -107,7 +107,7 @@ private:
   // low level functions
   void _send(uint8_t value, bool isData = false);
   void _sendNibble(uint8_t halfByte, bool isData = false);
-  void _write2Wire(uint8_t halfByte, bool isData, bool enable);
+  void _write2Wire(uint8_t byte);
 
   void init(uint8_t i2cAddr, uint8_t rs, uint8_t rw, uint8_t enable,
     uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, uint8_t backlight=255);

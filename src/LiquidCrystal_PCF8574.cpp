@@ -84,7 +84,7 @@ void LiquidCrystal_PCF8574::begin(uint8_t cols, uint8_t lines)
 
   // initializing the display
   Wire.begin();
-  _write2Wire(0x00, LOW, false);
+  _write2Wire(0x00);
   delayMicroseconds(50000);
 
   // after reset the mode is this
@@ -247,7 +247,7 @@ void LiquidCrystal_PCF8574::setBacklight(uint8_t brightness)
 {
   _backlight = brightness;
   // send no data but set the background-pin right;
-  _write2Wire(0x00, true, false);
+  _write2Wire(0x00);
 } // setBacklight()
 
 
@@ -367,28 +367,37 @@ void LiquidCrystal_PCF8574::_send(uint8_t value, bool isData)
 
 
 // write a nibble / halfByte with handshake
-void LiquidCrystal_PCF8574::_sendNibble(uint8_t halfByte, bool isData)
+void LiquidCrystal_PCF8574::_sendNibble(uint8_t value, bool isData)
 {
-  _write2Wire(halfByte, isData, true);
-  _write2Wire(halfByte, isData, false);
+  // map the given values to the hardware of the I2C schema
+  uint8_t out = 0;
+  if (isData)
+    out |= _rs_mask;
+  // _rw_mask is not used here.
+  if (_backlight > 0)
+    out |= _backlight_mask;
+
+  if (value & 0x01) out |= _data_mask[0];
+  if (value & 0x02) out |= _data_mask[1];
+  if (value & 0x04) out |= _data_mask[2];
+  if (value & 0x08) out |= _data_mask[3];
+
+  Wire.beginTransmission(_i2cAddr);
+  // pulse enable
+  Wire.write(out | _enable_mask);
+  Wire.write(out);
+  Wire.endTransmission();
 } // _sendNibble
 
 
 // private function to change the PCF8674 pins to the given value
-void LiquidCrystal_PCF8574::_write2Wire(uint8_t halfByte, bool isData, bool enable)
+void LiquidCrystal_PCF8574::_write2Wire(uint8_t byte)
 {
-  // map the given values to the hardware of the I2C schema
-  uint8_t i2cData = halfByte & 0x0f;
-  if (isData)
-    i2cData |= _rs_mask;
-  // _rw_mask is not used here.
-  if (enable)
-    i2cData |= _enable_mask;
+  uint8_t out = _rs_mask;
   if (_backlight > 0)
-    i2cData |= _backlight_mask;
-
+    out |= _backlight_mask;
   Wire.beginTransmission(_i2cAddr);
-  Wire.write(i2cData);
+  Wire.write(out);
   Wire.endTransmission();
 } // write2Wire
 
