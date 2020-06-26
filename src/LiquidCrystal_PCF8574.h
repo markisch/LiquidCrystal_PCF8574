@@ -24,6 +24,7 @@
 /// *   New constructors allow flexible pin assignments.
 /// *   New constructor for known display types.
 /// *   Replace int parameters by uint8_t where applicable
+/// *   Add variant createCharPgm() which retrieves data from PROGMEM
 
 #ifndef LiquidCrystal_PCF8574_h
 #define LiquidCrystal_PCF8574_h
@@ -59,6 +60,7 @@ public:
 
   void begin(uint8_t cols, uint8_t rows);
 
+  void clear();
   void home();
   void setCursor(uint8_t col, uint8_t row);
   void cursor();
@@ -75,9 +77,10 @@ public:
   void rightToLeft();
   void createChar(uint8_t, byte[]);
 
+  // own additions
+  void createCharPgm(uint8_t, const byte *);
 
   // plus functions from LCDAPI:
-  void clear();
   void setBacklight(uint8_t brightness);
 
   // support of Print class
