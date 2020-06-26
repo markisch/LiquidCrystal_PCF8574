@@ -10,25 +10,65 @@
 
 #include <Wire.h>
 
-/// Definitions on how the PCF8574 is connected to the LCD
+LiquidCrystal_PCF8574::LiquidCrystal_PCF8574(uint8_t i2cAddr)
+{
+  // default pin assignment
+  init(i2cAddr, 0, 1, 2, 4, 5, 6, 7, 3);
+} // LiquidCrystal_PCF8574
 
-/// These are Bit-Masks for the special signals and background light
-#define PCF_RS 0x01
-#define PCF_RW 0x02
-#define PCF_EN 0x04
-#define PCF_BACKLIGHT 0x08
-// the 0xF0 bits are used for 4-bit data to the display.
+LiquidCrystal_PCF8574::LiquidCrystal_PCF8574(uint8_t i2cAddr, enum LiquidCrystal_PCF8574_type type)
+{
+  switch (type) {
+  case LiquidCrystal_PCF8574_JOY_IT:
+    // https://joy-it.net/en/products/RB-LCD-20x4
+    init(i2cAddr, 4, 5, 7, 0, 1, 2, 3, 255);
+    break;
+  case LiquidCrystal_PCF8574_Default:
+  default:
+    init(i2cAddr, 0, 1, 2, 4, 5, 6, 7, 3);
+    break;
+  };
+} // LiquidCrystal_PCF8574
 
-// a nibble is a half Byte
+// constructors, which allows to redefine bit assignments in case your adapter is wired differently
+LiquidCrystal_PCF8574::LiquidCrystal_PCF8574(uint8_t i2cAddr, uint8_t rs, uint8_t enable,
+    uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, uint8_t backlight)
+{
+  init(i2cAddr, rs, 255, enable, d4, d5, d6, d7, backlight);
+} // LiquidCrystal_PCF8574
 
-LiquidCrystal_PCF8574::LiquidCrystal_PCF8574(int i2cAddr)
+LiquidCrystal_PCF8574::LiquidCrystal_PCF8574(uint8_t i2cAddr, uint8_t rs, uint8_t rw, uint8_t enable,
+    uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, uint8_t backlight)
+{
+  init(i2cAddr, rs, rw, enable, d4, d5, d6, d7, backlight);
+} // LiquidCrystal_PCF8574
+
+
+void LiquidCrystal_PCF8574::init(uint8_t i2cAddr, uint8_t rs, uint8_t rw, uint8_t enable,
+    uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, uint8_t backlight)
 {
   _i2cAddr = i2cAddr;
   _backlight = 0;
 
   _entrymode = 0x02; // like Initializing by Internal Reset Circuit
   _displaycontrol = 0x04;
-} // LiquidCrystal_PCF8574
+
+  _rs_mask = 0x01 << rs;
+  if (rw != 255)
+    _rw_mask = 0x01 << rw;
+  else
+    _rw_mask = 0;
+  _enable_mask = 0x01 << enable;
+  _data_mask[0] = 0x01 << d4;
+  _data_mask[1] = 0x01 << d5;
+  _data_mask[2] = 0x01 << d6;
+  _data_mask[3] = 0x01 << d7;
+
+  if (backlight != 255)
+    _backlight_mask = 0x01 << backlight;
+  else
+    _backlight_mask = 0;
+} // init()
 
 
 void LiquidCrystal_PCF8574::begin(int cols, int lines)
@@ -75,12 +115,6 @@ void LiquidCrystal_PCF8574::clear()
   _send(0x01);
   delayMicroseconds(1600); // this command takes 1.5ms!
 } // clear()
-
-
-void LiquidCrystal_PCF8574::init()
-{
-  clear();
-} // init()
 
 
 void LiquidCrystal_PCF8574::home()
@@ -234,17 +268,88 @@ void LiquidCrystal_PCF8574::createChar(int location, int charmap[])
 inline size_t LiquidCrystal_PCF8574::write(uint8_t ch)
 {
   _send(ch, true);
-  return 1; // assume sucess
+  return 1; // assume success
 } // write()
 
 
+size_t LiquidCrystal_PCF8574::write(const uint8_t *buffer, size_t size) {
+  size_t n = size;
+  uint8_t out, out1;
+  uint8_t c = 0;
+
+  out = _rs_mask;  // RS==HIGH
+  if (_backlight > 0)
+    out |= _backlight_mask;
+  out1 = out;
+
+  while (size--) {
+    byte value = *buffer++;
+
+    out = out1;
+    if (value & 0x10) out |= _data_mask[0];
+    if (value & 0x20) out |= _data_mask[1];
+    if (value & 0x40) out |= _data_mask[2];
+    if (value & 0x80) out |= _data_mask[3];
+
+    // pulse enable
+    if (c == 0) {
+      Wire.beginTransmission(_i2cAddr);
+    }
+    Wire.write(out | _enable_mask);
+    Wire.write(out);
+
+    out = out1;
+    if (value & 0x01) out |= _data_mask[0];
+    if (value & 0x02) out |= _data_mask[1];
+    if (value & 0x04) out |= _data_mask[2];
+    if (value & 0x08) out |= _data_mask[3];
+
+    // pulse enable
+    Wire.write(out | _enable_mask);
+    Wire.write(out);
+    c += 4;
+    if (c >= BUFFER_LENGTH - 4) {
+      // We only restart the transmission once the buffer is full.
+      Wire.endTransmission();
+      c = 0;
+    }
+  }
+  if (c != 0) Wire.endTransmission();
+  return n;
+}
+
+
 // write either command or data
-void LiquidCrystal_PCF8574::_send(int value, bool isData)
+void LiquidCrystal_PCF8574::_send(uint8_t value, bool isData)
 {
-  // write high 4 bits
-  _sendNibble((value >> 4 & 0x0F), isData);
-  // write low 4 bits
-  _sendNibble((value & 0x0F), isData);
+  uint8_t out = 0, out1;
+
+  if (_backlight > 0)
+    out |= _backlight_mask;
+  if (isData)
+    out |= _rs_mask;
+
+  out1 = out;
+  if (value & 0x10) out |= _data_mask[0];
+  if (value & 0x20) out |= _data_mask[1];
+  if (value & 0x40) out |= _data_mask[2];
+  if (value & 0x80) out |= _data_mask[3];
+
+  // pulse enable
+  Wire.beginTransmission(_i2cAddr);
+  Wire.write(out | _enable_mask);
+  Wire.write(out);
+
+  out = out1;
+  if (value & 0x01) out |= _data_mask[0];
+  if (value & 0x02) out |= _data_mask[1];
+  if (value & 0x04) out |= _data_mask[2];
+  if (value & 0x08) out |= _data_mask[3];
+
+  // pulse enable
+  Wire.write(out | _enable_mask);
+  Wire.write(out);
+  Wire.endTransmission();
 } // _send()
 
 
@@ -252,26 +357,22 @@ void LiquidCrystal_PCF8574::_send(int value, bool isData)
 void LiquidCrystal_PCF8574::_sendNibble(int halfByte, bool isData)
 {
   _write2Wire(halfByte, isData, true);
-  delayMicroseconds(1); // enable pulse must be >450ns
   _write2Wire(halfByte, isData, false);
-  delayMicroseconds(37); // commands need > 37us to settle
 } // _sendNibble
 
 
 // private function to change the PCF8674 pins to the given value
-// Note:
-// you may change this function what the display is attached to the PCF8574 in a different wiring.
-void LiquidCrystal_PCF8574::_write2Wire(int halfByte, bool isData, bool enable)
+void LiquidCrystal_PCF8574::_write2Wire(uint8_t halfByte, bool isData, bool enable)
 {
   // map the given values to the hardware of the I2C schema
-  int i2cData = halfByte << 4;
+  uint8_t i2cData = halfByte & 0x0f;
   if (isData)
-    i2cData |= PCF_RS;
-  // PCF_RW is never used.
+    i2cData |= _rs_mask;
+  // _rw_mask is not used here.
   if (enable)
-    i2cData |= PCF_EN;
+    i2cData |= _enable_mask;
   if (_backlight > 0)
-    i2cData |= PCF_BACKLIGHT;
+    i2cData |= _backlight_mask;
 
   Wire.beginTransmission(_i2cAddr);
   Wire.write(i2cData);
