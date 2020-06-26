@@ -82,6 +82,7 @@ public:
 
   // plus functions from LCDAPI:
   void setBacklight(uint8_t brightness);
+  inline void command(uint8_t value) { _send(value); }
 
   // support of Print class
   virtual size_t write(uint8_t ch);
