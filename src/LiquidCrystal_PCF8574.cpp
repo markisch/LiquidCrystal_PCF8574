@@ -71,12 +71,12 @@ void LiquidCrystal_PCF8574::init(uint8_t i2cAddr, uint8_t rs, uint8_t rw, uint8_
 } // init()
 
 
-void LiquidCrystal_PCF8574::begin(int cols, int lines)
+void LiquidCrystal_PCF8574::begin(uint8_t cols, uint8_t lines)
 {
   // _cols = cols ignored !
   _lines = lines;
 
-  int functionFlags = 0;
+  uint8_t functionFlags = 0;
 
   if (lines > 1) {
     functionFlags |= 0x08;
@@ -126,9 +126,9 @@ void LiquidCrystal_PCF8574::home()
 
 
 /// Set the cursor to a new position.
-void LiquidCrystal_PCF8574::setCursor(int col, int row)
+void LiquidCrystal_PCF8574::setCursor(uint8_t col, uint8_t row)
 {
-  int row_offsets[] = {0x00, 0x40, 0x14, 0x54};
+  uint8_t row_offsets[] = {0x00, 0x40, 0x14, 0x54};
   // Instruction: Set DDRAM address = 0x80
   _send(0x80 | (row_offsets[row] + col));
 } // setCursor()
@@ -243,7 +243,7 @@ void LiquidCrystal_PCF8574::noAutoscroll(void)
 /// Setting the brightness of the background display light.
 /// The backlight can be switched on and off.
 /// The current brightness is stored in the private _backlight variable to have it available for further data transfers.
-void LiquidCrystal_PCF8574::setBacklight(int brightness)
+void LiquidCrystal_PCF8574::setBacklight(uint8_t brightness)
 {
   _backlight = brightness;
   // send no data but set the background-pin right;
@@ -253,7 +253,7 @@ void LiquidCrystal_PCF8574::setBacklight(int brightness)
 
 // Allows us to fill the first 8 CGRAM locations
 // with custom characters
-void LiquidCrystal_PCF8574::createChar(int location, int charmap[])
+void LiquidCrystal_PCF8574::createChar(uint8_t location, byte charmap[])
 {
   location &= 0x7; // we only have 8 locations 0-7
   // Set CGRAM address
@@ -354,7 +354,7 @@ void LiquidCrystal_PCF8574::_send(uint8_t value, bool isData)
 
 
 // write a nibble / halfByte with handshake
-void LiquidCrystal_PCF8574::_sendNibble(int halfByte, bool isData)
+void LiquidCrystal_PCF8574::_sendNibble(uint8_t halfByte, bool isData)
 {
   _write2Wire(halfByte, isData, true);
   _write2Wire(halfByte, isData, false);

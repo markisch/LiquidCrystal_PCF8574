@@ -23,6 +23,7 @@
 /// *   Speed-up by about a factor of three by using optimized I2C requests
 /// *   New constructors allow flexible pin assignments.
 /// *   New constructor for known display types.
+/// *   Replace int parameters by uint8_t where applicable
 
 #ifndef LiquidCrystal_PCF8574_h
 #define LiquidCrystal_PCF8574_h
@@ -54,10 +55,12 @@ public:
   LiquidCrystal_PCF8574(uint8_t i2cAddr, uint8_t rs, uint8_t rw, uint8_t enable,
     uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, uint8_t backlight=255);
 
-  void begin(int cols, int rows);
+  // Functions from reference:
+
+  void begin(uint8_t cols, uint8_t rows);
 
   void home();
-  void setCursor(int col, int row);
+  void setCursor(uint8_t col, uint8_t row);
   void cursor();
   void noCursor();
   void blink();
@@ -70,11 +73,12 @@ public:
   void noAutoscroll();
   void leftToRight();
   void rightToLeft();
-  void createChar(int, int[]);
+  void createChar(uint8_t, byte[]);
+
 
   // plus functions from LCDAPI:
   void clear();
-  void setBacklight(int brightness);
+  void setBacklight(uint8_t brightness);
 
   // support of Print class
   virtual size_t write(uint8_t ch);
@@ -82,11 +86,11 @@ public:
 
 private:
   // instance variables
-  int _i2cAddr; ///< Wire Address of the LCD
-  int _backlight; ///< the backlight intensity
-  int _lines; ///< number of lines of the display
-  int _entrymode; ///<flags from entrymode
-  int _displaycontrol; ///<flags from displaycontrol
+  uint8_t _i2cAddr; ///< Wire Address of the LCD
+  uint8_t _backlight; ///< the backlight intensity
+  uint8_t _lines; ///< number of lines of the display
+  uint8_t _entrymode; ///<flags from entrymode
+  uint8_t _displaycontrol; ///<flags from displaycontrol
 
   // variables on how the PCF8574 is connected to the LCD
   uint8_t _rs_mask;
@@ -98,7 +102,7 @@ private:
 
   // low level functions
   void _send(uint8_t value, bool isData = false);
-  void _sendNibble(int halfByte, bool isData = false);
+  void _sendNibble(uint8_t halfByte, bool isData = false);
   void _write2Wire(uint8_t halfByte, bool isData, bool enable);
 
   void init(uint8_t i2cAddr, uint8_t rs, uint8_t rw, uint8_t enable,
