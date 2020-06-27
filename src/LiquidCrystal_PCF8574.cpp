@@ -251,6 +251,7 @@ void LiquidCrystal_PCF8574::setBacklight(uint8_t brightness)
 } // setBacklight()
 
 
+#ifdef __AVR__
 // Allows us to fill the first 8 CGRAM locations
 // with custom characters
 void LiquidCrystal_PCF8574::createChar(uint8_t location, byte charmap[])
@@ -275,6 +276,7 @@ void LiquidCrystal_PCF8574::createCharPgm(uint8_t location, const byte *charmap)
     write(c);
   }
 } // createCharPgm()
+#endif
 
 
 /* The write function is needed for derivation from the Print class. */

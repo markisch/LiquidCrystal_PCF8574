@@ -77,8 +77,13 @@ public:
   void rightToLeft();
   void createChar(uint8_t, byte[]);
 
+#ifdef __AVR__
   // own additions
   void createCharPgm(uint8_t, const byte *);
+  inline void createChar(uint8_t n, const byte *data) {
+    createCharPgm(n, data);
+  };
+#endif
 
   // plus functions from LCDAPI:
   void setBacklight(uint8_t brightness);
