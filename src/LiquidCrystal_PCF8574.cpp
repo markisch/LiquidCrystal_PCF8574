@@ -117,7 +117,7 @@ void LiquidCrystal_PCF8574::clear()
 {
   // Instruction: Clear display = 0x01
   _send(0x01);
-  delayMicroseconds(1600); // this command takes 1.5ms!
+  waitBusy();
 } // clear()
 
 
@@ -125,7 +125,7 @@ void LiquidCrystal_PCF8574::home()
 {
   // Instruction: Return home = 0x02
   _send(0x02);
-  delayMicroseconds(1600); // this command takes 1.5ms!
+  waitBusy();
 } // home()
 
 
@@ -394,6 +394,57 @@ void LiquidCrystal_PCF8574::_sendNibble(uint8_t value, bool isData)
   Wire.write(out);
   Wire.endTransmission();
 } // _sendNibble
+
+
+int LiquidCrystal_PCF8574::waitBusy() {
+  int n = 0;
+
+  // Return after an appropriate waiting time if we cannot read 
+  if (_rw_mask == 0) {
+    delayMicroseconds(1500);
+    return 0;
+  }
+
+  // First, we wait a little
+  delayMicroseconds(400);
+
+  // Wire.beginTransmission(_i2cAddr);
+
+  // Set data pins as input (all HIGH)
+  uint8_t out = _rw_mask | _data_mask[0] | _data_mask[1] | _data_mask[2] | _data_mask[3];
+  if (_backlight > 0)
+    out |= _backlight_mask;
+
+  uint8_t busy;
+  do {
+    // read high nibble of input
+    Wire.beginTransmission(_i2cAddr);
+    Wire.write(out | _enable_mask);
+    Wire.endTransmission();
+
+    Wire.requestFrom(_i2cAddr, uint8_t(1));
+    busy = Wire.read() & _data_mask[3];
+
+    Wire.beginTransmission(_i2cAddr);
+    Wire.write(out);
+    Wire.endTransmission();
+
+    // discard low nibble of input
+    Wire.beginTransmission(_i2cAddr);
+    Wire.write(out | _enable_mask);
+    Wire.endTransmission();
+
+    Wire.beginTransmission(_i2cAddr);
+    Wire.write(out);
+    Wire.endTransmission();
+
+    n++;
+  } while (busy);
+
+  // Wire.endTransmission();
+
+  return n;
+}
 
 
 // private function to change the PCF8674 pins to the given value

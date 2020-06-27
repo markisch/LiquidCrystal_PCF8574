@@ -25,6 +25,7 @@
 /// *   New constructor for known display types.
 /// *   Replace int parameters by uint8_t where applicable
 /// *   Add variant createCharPgm() which retrieves data from PROGMEM
+/// *   clear() and home() wait for the display's busy signal (if rw is available)
 
 #ifndef LiquidCrystal_PCF8574_h
 #define LiquidCrystal_PCF8574_h
@@ -92,6 +93,9 @@ public:
   // support of Print class
   virtual size_t write(uint8_t ch);
   virtual size_t write(const uint8_t *buffer, size_t size);
+
+  // helper functions
+  int waitBusy();
 
 private:
   // instance variables
