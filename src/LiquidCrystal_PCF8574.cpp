@@ -83,7 +83,11 @@ void LiquidCrystal_PCF8574::begin(uint8_t cols, uint8_t lines)
   }
 
   // initializing the display
-  Wire.begin();
+#ifdef __AVR__
+  // Do not re-initialize and overwrite user settings.
+  if ((TWCR & _BV(TWEN)) != _BV(TWEN))
+#endif
+    Wire.begin();
   _write2Wire(0x00);
   delayMicroseconds(50000);
 
