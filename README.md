@@ -4,7 +4,8 @@ A library for driving LiquidCrystal displays (LCD) by using the I2C bus and an P
 
 There are modules that can be soldered or stacked to the display that offers an I2C interface for communication instead of the 8+ digital lines that are used to send data to the display.
 
-Most of these modules use the wiring that is supported by this library default. If you use a module with a different wiring, you can use one of the class constructors which allow you to specify the bit assignments.
+Most of these modules use the wiring that is supported by this library's defaults. If you use a module with a different wiring, you can use one of the class constructors which allow you to specify the bit assignments.
+
+This fork of the library enables arbitrary pin assignments and is about a factor of three faster e.g. for complete screen updates.
 
 See the original web site for more details and pictures: <https://www.mathertel.de/Arduino/LiquidCrystal_PCF8574.aspx>
-
