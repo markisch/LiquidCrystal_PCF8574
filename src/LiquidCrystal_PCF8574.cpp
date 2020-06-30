@@ -89,6 +89,7 @@ void LiquidCrystal_PCF8574::begin(uint8_t cols, uint8_t lines)
 #endif
     Wire.begin();
   _write2Wire(0x00);
+  _rs_state = true;
   delayMicroseconds(50000);
 
   // after reset the mode is this
@@ -313,6 +314,11 @@ size_t LiquidCrystal_PCF8574::write(const uint8_t *buffer, size_t size) {
     // pulse enable
     if (c == 0) {
       Wire.beginTransmission(_i2cAddr);
+      if (!_rs_state) {
+        // Change RS line before ENABLE.
+        Wire.write(out);
+        _rs_state = true;
+      }
     }
     Wire.write(out | _enable_mask);
     Wire.write(out);
@@ -356,6 +362,11 @@ void LiquidCrystal_PCF8574::_send(uint8_t value, bool isData)
 
   // pulse enable
   Wire.beginTransmission(_i2cAddr);
+  if (_rs_state != isData) {
+    // Change RS line before ENABLE.
+    Wire.write(out);
+    _rs_state = isData;
+  }
   Wire.write(out | _enable_mask);
   Wire.write(out);
 
@@ -389,6 +400,11 @@ void LiquidCrystal_PCF8574::_sendNibble(uint8_t value, bool isData)
   if (value & 0x08) out |= _data_mask[3];
 
   Wire.beginTransmission(_i2cAddr);
+  if (_rs_state != isData) {
+    // Change RS line before ENABLE.
+    Wire.write(out);
+    _rs_state = isData;
+  }
   // pulse enable
   Wire.write(out | _enable_mask);
   Wire.write(out);

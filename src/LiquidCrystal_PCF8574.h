@@ -113,6 +113,9 @@ private:
   // these are used for 4-bit data to the display.
   uint8_t _data_mask[4];
 
+  // state of the RS line
+  bool _rs_state;
+
   // low level functions
   void _send(uint8_t value, bool isData = false);
   void _sendNibble(uint8_t halfByte, bool isData = false);
