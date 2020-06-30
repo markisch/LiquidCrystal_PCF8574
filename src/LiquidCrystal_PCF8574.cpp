@@ -405,20 +405,18 @@ int LiquidCrystal_PCF8574::waitBusy() {
     return 0;
   }
 
-  // First, we wait a little
-  delayMicroseconds(400);
-
-  // Wire.beginTransmission(_i2cAddr);
-
   // Set data pins as input (all HIGH)
   uint8_t out = _rw_mask | _data_mask[0] | _data_mask[1] | _data_mask[2] | _data_mask[3];
   if (_backlight > 0)
     out |= _backlight_mask;
 
+  Wire.beginTransmission(_i2cAddr);
+  // We change the RW pin. This may not be done together with ENABLE.
+  Wire.write(out);
+
   uint8_t busy;
   do {
     // read high nibble of input
-    Wire.beginTransmission(_i2cAddr);
     Wire.write(out | _enable_mask);
     Wire.endTransmission();
 
@@ -427,21 +425,20 @@ int LiquidCrystal_PCF8574::waitBusy() {
 
     Wire.beginTransmission(_i2cAddr);
     Wire.write(out);
-    Wire.endTransmission();
 
     // discard low nibble of input
-    Wire.beginTransmission(_i2cAddr);
     Wire.write(out | _enable_mask);
-    Wire.endTransmission();
-
-    Wire.beginTransmission(_i2cAddr);
     Wire.write(out);
-    Wire.endTransmission();
 
     n++;
   } while (busy);
 
-  // Wire.endTransmission();
+  // Reset RW bit
+  out = 0x00;
+  if (_backlight > 0)
+    out |= _backlight_mask;
+  Wire.write(out);
+  Wire.endTransmission();
 
   return n;
 }
